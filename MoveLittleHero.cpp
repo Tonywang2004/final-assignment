@@ -44,7 +44,8 @@ void littleHero::setMouseParameter(cocos2d::Event* event) {
     cocos2d::EventMouse* moveToClick = dynamic_cast<cocos2d::EventMouse*>(event);
     if (moveToClick) {
         cocos2d::EventMouse* moveToClick = dynamic_cast<cocos2d::EventMouse*>(event);
-        if (moveToClick) {
+        //检查是否为右键点击移动
+        if (moveToClick && moveToClick->getMouseButton() == cocos2d::EventMouse::MouseButton::BUTTON_RIGHT) {
             //获取移动位置的坐标
             cocos2d::Vec2 location = moveToClick->getLocationInView();
             location = cocos2d::Director::getInstance()->convertToGL(location);
