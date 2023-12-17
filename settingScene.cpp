@@ -87,14 +87,14 @@ void SettingScene::conductSetResolution(){
     Size screenSize = Director::getInstance()->getOpenGLView()->getFrameSize();
 
     // 使用通用函数创建分辨率设置按钮
-    auto button1280x720 = createResolutionButton("1280x720", 1280, 720);
+    auto button1728x972 = createResolutionButton("1728x972", 1728, 972);//1728,972
     auto button1920x1080 = createResolutionButton("1920x1080", 1920, 1080);
     auto button2560x1440 = createResolutionButton("2560x1440", 2560, 1440);
-    auto button2880x1800 = createResolutionButton("2880x1800", 2880, 1800);
+    auto button3072x1728 = createResolutionButton("3072x1728", 3072, 1728);//3072 1728
     auto button3840x2160 = createResolutionButton("3840x2160", 3840, 2160);
 
     // 将按钮添加到菜单
-    auto menu = Menu::create(button1280x720, button1920x1080, button2560x1440, button2880x1800, button3840x2160, nullptr);
+    auto menu = Menu::create(button1728x972, button1920x1080, button2560x1440, button3072x1728, button3840x2160, nullptr);
     menu->alignItemsVertically();// 垂直排列按钮
     this->addChild(menu);
 
