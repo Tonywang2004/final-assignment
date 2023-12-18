@@ -3,8 +3,11 @@
 #include "cocos2d.h"
 #include<vector>
 
+//初始化,确定角色
+littleHero::littleHero() : numPlayer(4) {
+}
 
- // 静态创建小小英雄
+// 静态创建小小英雄
 littleHero* littleHero::create(const std::string& filename) {
     littleHero* hero = new littleHero();
     if (hero && hero->initWithFile(filename)) {
@@ -19,6 +22,8 @@ littleHero* littleHero::create(const std::string& filename) {
 void littleHero::enableMouseControl(bool enabled) {
     if (enabled) {
         if (!_mouseListener) {
+            //加载角色图片
+            preloadWalkingFrames(numPlayer);
             // 初始化监听器
             initMouseListener();
         }
@@ -52,7 +57,6 @@ void littleHero::setMouseParameter(cocos2d::Event* event) {
             //不知道y轴为什么是反的，此处手动调整
             auto refreshSize = cocos2d::Director::getInstance()->getWinSize();
             location.y = refreshSize.height - location.y;
-
             // 获取实际分辨率
             cocos2d::Size visibleSize = cocos2d::Director::getInstance()->getVisibleSize();
 
@@ -76,22 +80,23 @@ void littleHero::setMouseParameter(cocos2d::Event* event) {
 
             if (actualBoardRect.containsPoint(location)) {
                 // 如果在有效区域内，移动英雄
-                moveHeroToLocation(location);
+                moveHeroToLocation(location, numPlayer);
             }
+
         }
     }
 }
 
 //移动小小精灵
-void littleHero::moveHeroToLocation(const cocos2d::Vec2& location) {
+void littleHero::moveHeroToLocation(const cocos2d::Vec2& location, const int& numPlayer) {
     // 停止所有动画
-    this->stopAllActions();
+    this->stopHeroAction(numPlayer);
 
     // 创建行走动画的帧
     cocos2d::Vector<cocos2d::SpriteFrame*> walkFrames;
-    for (int i = 1; i <= 8; ++i) {
+    for (int i = 0; i <= 7; ++i) {
         //此处可考虑增加几个小小英雄
-        std::string frameName = "LittlePlayer_1_" + std::to_string(i) + ".png"; //帧图片
+        std::string frameName = "LittlePlayer_" + std::to_string(numPlayer) + "_" + std::to_string(i) + ".png"; //帧图片
         auto frame = cocos2d::SpriteFrameCache::getInstance()->getSpriteFrameByName(frameName);
         if (frame) {
             walkFrames.pushBack(frame);
@@ -114,8 +119,8 @@ void littleHero::moveHeroToLocation(const cocos2d::Vec2& location) {
     auto moveAndAnimate = cocos2d::Spawn::createWithTwoActions(moveTo, repeatWalkAnimate);
 
     // 创建动作完成后的回调，以停止所有动画
-    auto callback = cocos2d::CallFunc::create([this]() {
-        this->stopAllActions(); // 停止所有动画
+    auto callback = cocos2d::CallFunc::create([this, numPlayer]() {
+        this->stopHeroAction(numPlayer); // 停止所有动画
         });
 
     // 将移动动作、行走动画和回调组合成一个序列
@@ -125,11 +130,53 @@ void littleHero::moveHeroToLocation(const cocos2d::Vec2& location) {
     this->runAction(sequence);
 }
 
-void littleHero::stopHeroAction() {
+void littleHero::stopHeroAction(const int& numPlayer) {
     // 停止行走动画，恢复到站立状态的精灵帧
     this->stopAllActions();
-    auto frame = cocos2d::SpriteFrameCache::getInstance()->getSpriteFrameByName("LittlePlayer_1_0.png");
+    auto frame = cocos2d::SpriteFrameCache::getInstance()->getSpriteFrameByName("LittlePlayer_" + std::to_string(numPlayer) + "_8" + ".png");
     if (frame) {
         this->setSpriteFrame(frame);
+    }
+}
+
+//加载行走动作帧，如果要增加小小精灵，注意该函数
+void  littleHero::preloadWalkingFrames(const int& numPlayer) {
+    // 写这段代码时的屏幕分辨率
+    const float designWidth = 2560.0f;
+    const float designHeight = 1440.0f;
+
+    // 获取当前视窗大小
+    auto visibleSize = cocos2d::Director::getInstance()->getVisibleSize();
+
+    // 计算缩放因子
+    float scaleX = visibleSize.width / designWidth;
+    float scaleY = visibleSize.height / designHeight;
+
+    // 当前帧图片的尺寸
+    float originalFrameWidth = 400.0f;
+    float originalFrameHeight = 320.0f;
+
+    // 调整帧尺寸以适应当前分辨率
+    float frameWidth = originalFrameWidth * scaleX;
+    float frameHeight = originalFrameHeight * scaleY;
+    for (int i = 0; i <= 8; ++i) {
+        std::string frameName = "LittlePlayer_" + std::to_string(numPlayer) + "_" + std::to_string(i) + ".png"; // 加载player1帧图片
+        auto frame = cocos2d::SpriteFrame::create(frameName, cocos2d::Rect(0, 0, frameWidth, frameHeight));
+        cocos2d::SpriteFrameCache::getInstance()->addSpriteFrame(frame, frameName);
+    }
+    for (int i = 0; i <= 8; ++i) {
+        std::string frameName = "LittlePlayer_" + std::to_string(numPlayer) + "_" + std::to_string(i) + ".png"; // 加载player2帧图片
+        auto frame = cocos2d::SpriteFrame::create(frameName, cocos2d::Rect(0, 0, frameWidth, frameHeight));
+        cocos2d::SpriteFrameCache::getInstance()->addSpriteFrame(frame, frameName);
+    }
+    for (int i = 0; i <= 8; ++i) {
+        std::string frameName = "LittlePlayer_" + std::to_string(numPlayer) + "_" + std::to_string(i) + ".png"; // 加载player3帧图片
+        auto frame = cocos2d::SpriteFrame::create(frameName, cocos2d::Rect(0, 0, frameWidth, frameHeight));
+        cocos2d::SpriteFrameCache::getInstance()->addSpriteFrame(frame, frameName);
+    }
+    for (int i = 0; i <= 8; ++i) {
+        std::string frameName = "LittlePlayer_" + std::to_string(numPlayer) + "_" + std::to_string(i) + ".png"; // 加载player4帧图片
+        auto frame = cocos2d::SpriteFrame::create(frameName, cocos2d::Rect(0, 0, frameWidth, frameHeight));
+        cocos2d::SpriteFrameCache::getInstance()->addSpriteFrame(frame, frameName);
     }
 }
