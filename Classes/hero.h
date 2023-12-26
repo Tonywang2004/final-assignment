@@ -3,42 +3,55 @@
 #include "cocos2d.h"
 #include"player.h"
 #include"heroAction.h"
+#include"const.h"
 #include"HelloWorldScene.h"
+#include"weapon.h";
 using namespace std;
 using namespace cocos2d;
+class Hero;
 class Hero :public cocos2d::Node{
 	friend class player;
 	friend class ImageSwitcher;
-protected:
 
+protected:
 public:
 	float atn;//物理攻击力
-	float matk;//magic attack 魔法攻击力
 	float def;//物理防御力
-	float mr;//magic resistance 魔抗
 	float hp_max=100;//生命值
 	float hp_now=hp_max;
 	float mp_max;//蓝条
 	float mp_now;
 	float as=1;//attack speed 攻速
-	float ch;//critical hit 暴击
-	float ch_ma;//magnification 倍率
+	float ch=0.1;//critical hit 暴击
+	float ch_ma=1.5;//magnification 倍率
 	float ran;//range 射程
 	int kind1;//基础分类 射手、法师、战士、刺客
 	int kind2 = 0;//额外分类  恶魔、天使、龙、亡灵
-	int prize;
+	int price;
+	int seat;
 	float mp_increment=10;
 	bool is_ontheboard;//是否上场	
 	double target_distance;
-	Hero* target = nullptr;//目标
+	bool islive=1;
+	Hero* target=nullptr;//目标
 	Sprite* mine = nullptr;//自己
 	Vec2 hero_position;
+	vector<int> kind;
+	int level = 1;
+	Weapon* wea[3];
 	Vec2 target_position;
 	void updateposition();
-	void take_danmage(Hero* enemy,HelloWorld* the,int danmage=0);
-	void get_target(Hero* hero, Player enermy);
+	void get_target(Hero* hero, Player enemy);
+	ProgressTimer* hp = ProgressTimer::create(Sprite::create("hp_progress_bar.png"));
+	ProgressTimer* mp = ProgressTimer::create(Sprite::create("mp_progress_bar.png"));
+	Sprite* isdie= Sprite::create("die.png");
 	Sprite* getmine() { return mine; }
-	Hero* gettarget() { return target; }
+	Hero* gettarget(Player enemy) {
+		get_target(this,enemy);
+		return target;
+	}
+	void move_to_target(HelloWorld*the,Hero* enemy);
+	int No;
 };
 //class Hero {
 //public:
@@ -87,26 +100,197 @@ public:
 //			CC_SCHEDULE_SELECTOR(Hero::update), this, 0, false);
 //	}
 //};
-class Ghostride :public Hero {
+class Soldier :public Hero {
 public:
-	Ghostride(HelloWorld* helloworld){
+	Soldier(HelloWorld* helloworld) {
+		No = pow(100, level) * Demonsoldier;
 		the = helloworld;
 		atn = 20;
-		matk = 0;
 		def = 10;
 		as = 1;
-		hp_max = 100;
-		hp_now = 100;
+		ran = 10;
+		hp_max = 150;
+		hp_now = 150;
 		mp_max = 10;
+		mp_increment = 10;
 		mp_now = 4;
 		mine = gr;
 		gr->setContentSize(Size(100, 100));
 		updateposition();
 	}
 	HelloWorld* the;
-	Sprite* gr = Sprite::create("player.png");
+	Sprite* gr = Sprite::create("soldier.png");
+	void attack(Hero* enemy, HelloWorld* the, Player enemy_hero);
+	void skill_add(HelloWorld* the, Player enemy_hero, ProgressTimer* hp);//根据时间增加蓝条
+	void skill(ProgressTimer* myhp);//蓝条封顶放技能:额外造成敌方最大生命值百分之十的血量
+};
+class SuperSoldier :public Hero {
+public:
+	SuperSoldier(HelloWorld* helloworld) {
+		No = pow(100, level) * Demonsoldier;
+		the = helloworld;
+		atn = 20;
+		def = 10;
+		as = 1;
+		ran = 10;
+		hp_max = 150;
+		hp_now = 150;
+		mp_max = 10;
+		mp_increment = 10;
+		mp_now = 4;
+		mine = gr;
+		gr->setContentSize(Size(100, 100));
+		updateposition();
+		hp->setType(ProgressTimer::Type::BAR);
+		hp->setScaleX(0.25); // 宽度缩小为原来的一半
+		hp->setScaleY(0.5); // 高度放大为原来的两倍
+		hp->setPercentage(100);
+		hp->setMidpoint(Vec2(50, 30)); // 进度条起点位置
+		hp->setBarChangeRate(cocos2d::Vec2(1, 0)); // 进度条方向
+		hp->setPosition(Vec2(50, 30)); // 进度条位置
+		if (hp->getParent() == nullptr)
+			mine->addChild(hp);
+	}
+	HelloWorld* the;
+	Sprite* gr = Sprite::create("supersoldier.png");
+	void attack(Hero* enemy, HelloWorld* the, Player enemy_hero);
+	void skill_add(HelloWorld* the, Player enemy_hero, ProgressTimer* hp);//根据时间增加蓝条
+	void skill(Hero* target, HelloWorld* the, ProgressTimer* myhp);//蓝条封顶放技能:额外造成敌方最大生命值百分之十的血量
+};
+class DemonSoldier :public Hero {
+public:
+	DemonSoldier(HelloWorld* helloworld){
+		No = pow(100,level)* Demonsoldier;
+		the = helloworld;
+		atn = 30;
+		def = 10;
+		as = 1;
+		ran = 10;
+		hp_max = 150;
+		hp_now = 150;
+		mp_max = 10;
+		mp_increment = 10;
+		mp_now = 4;
+		mine = gr;
+		gr->setContentSize(Size(100, 100));
+		updateposition();
+		hp->setType(ProgressTimer::Type::BAR);
+		hp->setScaleX(0.25); // 宽度缩小为原来的一半
+		hp->setScaleY(0.5); // 高度放大为原来的两倍
+		hp->setPercentage(100);
+		hp->setMidpoint(Vec2(50, 30)); // 进度条起点位置
+		hp->setBarChangeRate(cocos2d::Vec2(1, 0)); // 进度条方向
+		hp->setPosition(Vec2(50, 30)); // 进度条位置
+		if (hp->getParent() == nullptr)
+			mine->addChild(hp);
+		mp->setType(ProgressTimer::Type::BAR);
+		mp->setScaleX(0.25); // 宽度缩小为原来的一半
+		mp->setScaleY(0.5); // 高度放大为原来的两倍
+		mp->setPercentage(40);
+		mp->setMidpoint(Vec2(50, 40)); // 进度条起点位置
+		mp->setBarChangeRate(cocos2d::Vec2(1, 0)); // 进度条方向
+		mp->setPosition(Vec2(50, 40)); // 进度条位置
+		if (mp->getParent() == nullptr)
+			mine->addChild(mp);
+		isdie->setContentSize(Size(100, 50));
+		isdie->setPosition(Vec2(50, 50));
+		isdie->setVisible(false);
+		mine->addChild(isdie);
+	}
+
+	HelloWorld* the;
+	Sprite* gr = Sprite::create("Demonsoldier.png");
 	void attack(Hero* enemy, HelloWorld* the, Player enemy_hero);
 	void skill_add(HelloWorld* the,Player enemy_hero,ProgressTimer* hp);//根据时间增加蓝条
-	void skill(Hero* target,HelloWorld* the,Vec2 fromposition,Vec2 toposition) ;//蓝条封顶放技能:额外造成敌方最大生命值百分之十的血量
+	void skill(ProgressTimer *myhp) ;//蓝条封顶放技能:额外造成敌方最大生命值百分之十的血量
+};
+class Shooter :public Hero {
+public:
+	Shooter(HelloWorld* helloworld) {
+		the = helloworld;
+		atn = 20;
+		def = 5;
+		as = 0.5;
+		hp_max = 100;
+		hp_now = 100;
+		mp_max = 10;
+		mp_now = 4;
+		mine = st;
+		mp_increment = 20;
+		st->setContentSize(Size(100, 100));
+		updateposition();
+		updateposition();
+		hp->setType(ProgressTimer::Type::BAR);
+		hp->setScaleX(0.25); // 宽度缩小为原来的一半
+		hp->setScaleY(0.5); // 高度放大为原来的两倍
+		hp->setPercentage(100);
+		hp->setMidpoint(Vec2(50, 30)); // 进度条起点位置
+		hp->setBarChangeRate(cocos2d::Vec2(1, 0)); // 进度条方向
+		hp->setPosition(Vec2(50, 30)); // 进度条位置
+		if (hp->getParent() == nullptr)
+			mine->addChild(hp);
+		mp->setType(ProgressTimer::Type::BAR);
+		mp->setScaleX(0.25); // 宽度缩小为原来的一半
+		mp->setScaleY(0.5); // 高度放大为原来的两倍
+		mp->setPercentage(40);
+		mp->setMidpoint(Vec2(50, 40)); // 进度条起点位置
+		mp->setBarChangeRate(cocos2d::Vec2(1, 0)); // 进度条方向
+		mp->setPosition(Vec2(50, 40)); // 进度条位置
+		if (mp->getParent() == nullptr)
+			mine->addChild(mp);
+		isdie->setContentSize(Size(100, 50));
+		isdie->setPosition(Vec2(50, 50));
+		isdie->setVisible(false);
+		mine->addChild(isdie);
+	}
+	HelloWorld* the;
+	Sprite* st = Sprite::create("shooter.png");
+	void attack(Hero* enemy, HelloWorld* the, Player enemy_hero);
+	void skill_add(HelloWorld* the, Player enemy_hero, ProgressTimer* hp);//根据时间增加蓝条
+	void skill(Hero* target, HelloWorld* the, Vec2 fromposition, Vec2 toposition);//蓝条封顶放技能:额外造成敌方最大生命值百分之十的血量
+};
+class SuperShooter :public Hero {
+public:
+	SuperShooter(HelloWorld* helloworld) {
+		the = helloworld;
+		atn = 30;
+		def = 5;
+		as = 0.5;
+		hp_max = 100;
+		hp_now = 100;
+		mp_max = 10;
+		mp_now = 4;
+		mine = st;
+		mp_increment = 20;
+		st->setContentSize(Size(100, 100));
+		updateposition();
+	}
+	HelloWorld* the;
+	Sprite* st = Sprite::create("supershooter.png");
+	void attack(Hero* enemy, HelloWorld* the, Player enemy_hero);
+	void skill_add(HelloWorld* the, Player enemy_hero, ProgressTimer* hp);//根据时间增加蓝条
+	void skill(Hero* target, HelloWorld* the, Vec2 fromposition, Vec2 toposition);//蓝条封顶放技能:额外造成敌方最大生命值百分之十的血量
+};
+class DemonShooter :public Hero {
+public:
+	DemonShooter(HelloWorld* helloworld) {
+		the = helloworld;
+		atn = 30;
+		def = 5;
+		as = 0.5;
+		hp_max = 100;
+		hp_now = 100;
+		mp_max = 10;
+		mp_now = 4;
+		mine = st;
+		mp_increment = 20;
+		st->setContentSize(Size(100, 100));
+		updateposition();
+	}
+	HelloWorld* the;
+	Sprite* st = Sprite::create("demonshooter.png");
+	void attack(Hero* enemy, HelloWorld* the, Player enemy_hero);
+	void skill_add(HelloWorld* the, Player enemy_hero, ProgressTimer* hp);//根据时间增加蓝条
+	void skill(Hero* target, HelloWorld* the, Vec2 fromposition, Vec2 toposition);//蓝条封顶放技能:额外造成敌方最大生命值百分之十的血量
 };
 #endif
