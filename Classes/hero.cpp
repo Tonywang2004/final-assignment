@@ -5,6 +5,7 @@ using namespace std;
 using namespace cocos2d;
 extern Player my_hero;
 extern Player enemy_hero;
+//要写转移目标函数
 void Soldier::skill_add(HelloWorld* the, Player enemy_hero, ProgressTimer* hp) {
 	//创建进度条
 	updateposition();
@@ -22,7 +23,11 @@ void Soldier::skill_add(HelloWorld* the, Player enemy_hero, ProgressTimer* hp) {
 		float MyHpPercentage = myhp->getPercentage();
 		if (mp->isVisible() == true) {
 			if (hp->getPercentage() == 0) {
-				the->unschedule(scheduleKey);
+				mp->setVisible(false);
+				auto sprite = Sprite::create("die.png");
+				sprite->setContentSize(Size(100, 50));
+				sprite->setPosition(target_hero->getPosition());
+				the->addChild(sprite);
 			}
 			if (newMpPercentage >= 100.0f) {
 				// MP达到100%，重置MP并减少HP
@@ -32,7 +37,7 @@ void Soldier::skill_add(HelloWorld* the, Player enemy_hero, ProgressTimer* hp) {
 					skill(myhp);
 				}
 				else
-					the->unschedule(scheduleKey);//自己死了或目标死了退出
+					mp->setVisible(false);
 				// 更新HP进度条
 				float newHpPercentage = hp->getPercentage() - 10;
 				hp->setPercentage(newHpPercentage);
@@ -46,7 +51,6 @@ void Soldier::skill(ProgressTimer* myhp) {
 	if (newHpPercentage > 100)
 		newHpPercentage = 100;
 	myhp->setPercentage(newHpPercentage);
-
 }
 void Soldier::attack(Hero* enemy, HelloWorld* the, Player enemy_hero)
 {
@@ -72,28 +76,25 @@ void Soldier::attack(Hero* enemy, HelloWorld* the, Player enemy_hero)
 		auto my_hero = mine;
 		int nums = 0;
 		ProgressTimer* hp = target->hp;
-		Sprite* show_isdie = isdie;
 		the->schedule([=](float dt) {
 			float MyHpPercentage = myhp->getPercentage();
 			float hp_nownow = hp->getPercentage() / 100 * hp_maxmax - damage;//damage;
+			auto moveTo = MoveTo::create(0.1f, target_hero->getPosition());
 			auto rotateRight = RotateBy::create(0.5f, 30.0f); // 0.5秒内旋转30度
 			auto rotateBack = RotateBy::create(0.5f, -30.0f); // 再次旋转-30度以返回原位
-			auto sequence = Sequence::create(rotateRight, rotateBack, nullptr);
+			auto sequence = Sequence::create(moveTo, rotateRight, rotateBack, nullptr);
 			my_hero->runAction(sequence);
 			if (hp_nownow < 0) {
 				hp_nownow = 0;
 				hp->setVisible(false);
-				the->unschedule(scheduleKey1);//目标死了退出
 			}
 			// 更新HP进度条
 			if (MyHpPercentage != 0) {
 				float newHpPercentage = static_cast<float>(hp_nownow) / hp_maxmax * 100.0f;
 				hp->setPercentage(newHpPercentage);
 			}
-			else {
-				show_isdie->setVisible(true);
-				the->unschedule(scheduleKey1);//自己死了退出循环
-			}
+			else
+				the->unschedule(scheduleKey1);
 			}, internal, scheduleKey1);
 		skill_add(the, enemy_hero, hp);
 	}
@@ -101,8 +102,16 @@ void Soldier::attack(Hero* enemy, HelloWorld* the, Player enemy_hero)
 void SuperSoldier::skill_add(HelloWorld* the, Player enemy_hero, ProgressTimer* hp) {
 	//创建进度条
 	updateposition();
-	ProgressTimer* mp = this->mp;
+	ProgressTimer* mp = ProgressTimer::create(Sprite::create("mp_progress_bar.png"));
 	ProgressTimer* myhp = this->hp;
+	mp->setType(ProgressTimer::Type::BAR);
+	mp->setScaleX(0.25); // 宽度缩小为原来的一半
+	mp->setScaleY(0.5); // 高度放大为原来的两倍
+	mp->setMidpoint(Vec2(hero_position.x, hero_position.y - 20)); // 进度条起点位置
+	mp->setBarChangeRate(cocos2d::Vec2(1, 0)); // 进度条方向
+	mp->setPosition(hero_position.x, hero_position.y - 20); // 进度条位置
+	mp->setPercentage(mp_now * 100 / mp_max);
+	the->addChild(mp); // 将进度条添加到场景中
 	get_target(this, enemy_hero);
 	float mp_up = mp_increment;
 	Vec2 fromposition = hero_position;
@@ -114,18 +123,24 @@ void SuperSoldier::skill_add(HelloWorld* the, Player enemy_hero, ProgressTimer* 
 		float newMpPercentage = mp->getPercentage() + mp_up;
 		float MyHpPercentage = myhp->getPercentage();
 		if (mp->isVisible() == true) {
+			mp->setPosition(my_hero->getPosition().x, my_hero->getPosition().y - 20); // 进度条位置
 			if (hp->getPercentage() == 0) {
-				the->unschedule(scheduleKey);
+				mp->setVisible(false);
+				//死亡标记
+				auto sprite = Sprite::create("die.png");
+				sprite->setContentSize(Size(100, 50));
+				sprite->setPosition(target_hero->getPosition());
+				the->addChild(sprite);
 			}
 			if (newMpPercentage >= 100.0f) {
 				// MP达到100%，重置MP并减少HP
 				newMpPercentage = 0.0f;
 				// 减少HP的当前值的20%
 				if (hp->getPercentage() != 0 && MyHpPercentage != 0) {
-					skill(myhp);
+					skill(target, the, myhp);
 				}
 				else
-					the->unschedule(scheduleKey);//自己死了或目标死了退出
+					mp->setVisible(false);
 				// 更新HP进度条
 				float newHpPercentage = hp->getPercentage() - 10;
 				hp->setPercentage(newHpPercentage);
@@ -134,8 +149,8 @@ void SuperSoldier::skill_add(HelloWorld* the, Player enemy_hero, ProgressTimer* 
 		mp->setPercentage(newMpPercentage);
 		}, 0.5f, scheduleKey);
 }
-void SuperSoldier::skill(ProgressTimer* myhp) {
-	float newHpPercentage = myhp->getPercentage() + 30;
+void SuperSoldier::skill(Hero* target, HelloWorld* the, ProgressTimer* myhp) {
+	float newHpPercentage = myhp->getPercentage() + 40;
 	if (newHpPercentage > 100)
 		newHpPercentage = 100;
 	myhp->setPercentage(newHpPercentage);
@@ -146,50 +161,52 @@ void SuperSoldier::attack(Hero* enemy, HelloWorld* the, Player enemy_hero)
 	//以敌方为中心展开,下为地方血条
 	//ImageSwitcher imageswitch("DemonSoldier.png", "player.png", this);
 	ProgressTimer* myhp = hp;
+	ProgressTimer* hp = enemy->hp;
 	get_target(this, enemy_hero);
 	move_to_target(the, target);
+	get_target(this, enemy_hero);
 	updateposition();
+	hp->setType(ProgressTimer::Type::BAR);
+	hp->setScaleX(0.25); // 宽度缩小为原来的一半
+	hp->setScaleY(0.5); // 高度放大为原来的两倍
+	hp->setPercentage(100);
+	hp->setMidpoint(Vec2(target_position.x, target_position.y - 30)); // 进度条起点位置
+	hp->setBarChangeRate(cocos2d::Vec2(1, 0)); // 进度条方向
+	hp->setPosition(target_position.x, target_position.y - 30); // 进度条位置
+	if (hp->getParent() == nullptr)
+		the->addChild(hp);
 	auto moveAction = MoveTo::create(0.5f, target_position);
 	string scheduleKey1 = "progress_update_hp" + std::to_string(reinterpret_cast<std::uintptr_t>(this));//change the key word
 	float hp_maxmax = hp_max;
 	srand((time(0)));
 	// 生成随机数
-	int random_number = rand() % 100;
+	int random_number = rand()%100;
 	float internal = (float)random_number / 1000 + as;
 	float damage = atn - target->def;
 	float moveDuration = 1.0f; // 移动持续时间，根据需要调整
 	if (target != nullptr) {
 		updateposition();
 		auto nowposition = hero_position;
+		auto toposition = target_position;
 		auto target_hero = target->mine;
-		auto my_hero = mine;
-		int nums = 0;
-		ProgressTimer* hp = target->hp;
-		Sprite* show_isdie = isdie;
 		the->schedule([=](float dt) {
 			float MyHpPercentage = myhp->getPercentage();
 			float hp_nownow = hp->getPercentage() / 100 * hp_maxmax - damage;//damage;
-			auto rotateRight = RotateBy::create(0.5f, 30.0f); // 0.5秒内旋转30度
-			auto rotateBack = RotateBy::create(0.5f, -30.0f); // 再次旋转-30度以返回原位
-			auto sequence = Sequence::create(rotateRight, rotateBack, nullptr);
-			my_hero->runAction(sequence);
+
 			if (hp_nownow < 0) {
 				hp_nownow = 0;
 				hp->setVisible(false);
-				the->unschedule(scheduleKey1);//目标死了退出
 			}
 			// 更新HP进度条
 			if (MyHpPercentage != 0) {
 				float newHpPercentage = static_cast<float>(hp_nownow) / hp_maxmax * 100.0f;
 				hp->setPercentage(newHpPercentage);
 			}
-			else {
-				show_isdie->setVisible(true);
-				the->unschedule(scheduleKey1);//自己死了退出循环
-			}
+			else
+				the->unschedule(scheduleKey1);
 			}, internal, scheduleKey1);
-		skill_add(the, enemy_hero, hp);
 	}
+	skill_add(the, enemy_hero, hp);
 }
 void DemonSoldier::skill_add(HelloWorld* the, Player enemy_hero, ProgressTimer* hp) {
 	//创建进度条
@@ -208,7 +225,7 @@ void DemonSoldier::skill_add(HelloWorld* the, Player enemy_hero, ProgressTimer* 
 		float MyHpPercentage = myhp->getPercentage();
 		if (mp->isVisible() == true) {
 			if (hp->getPercentage() == 0) {
-				the->unschedule(scheduleKey);
+				mp->setVisible(false);
 			}
 			if (newMpPercentage >= 100.0f) {
 				// MP达到100%，重置MP并减少HP
@@ -378,7 +395,8 @@ void Shooter::attack(Hero* enemy, HelloWorld* the, Player enemy_hero)
 			{
 				show_isdie->setVisible(true);
 				the->unschedule(scheduleKey);//自己死了退出
-			}}, internal, scheduleKey);
+			}
+			}, internal, scheduleKey);
 		skill_add(the, enemy_hero, hp);
 	}
 }
@@ -397,18 +415,23 @@ void SuperShooter::skill_add(HelloWorld* the, Player enemy_hero, ProgressTimer* 
 		float MyHpPercentage = myhp->getPercentage();
 		if (mp->isVisible() == true) {
 			if (hp->getPercentage() == 0) {
-				the->unschedule(scheduleKey);
+				mp->setVisible(false);
+				auto sprite = Sprite::create("die.png");
+				sprite->setContentSize(Size(100, 50));
+				sprite->setPosition(target_hero->getPosition());
+				the->addChild(sprite);
 			}
 			if (newMpPercentage >= 100.0f) {
 				// MP达到100%，重置MP并减少HP
 				newMpPercentage = 0.0f;
+				// 减少HP的当前值的20%
 				if (hp->getPercentage() != 0 && MyHpPercentage != 0) {
 					skill(target, the, fromposition, target_hero->getPosition());
 				}
 				else
-					the->unschedule(scheduleKey);//自己死了或目标死了退出
+					mp->setVisible(false);
 				// 更新HP进度条
-				float newHpPercentage = hp->getPercentage() - 20;
+				float newHpPercentage = hp->getPercentage() - 10;
 				hp->setPercentage(newHpPercentage);
 			}
 		}
@@ -434,57 +457,67 @@ void SuperShooter::attack(Hero* enemy, HelloWorld* the, Player enemy_hero)
 	ProgressTimer* myhp = hp;
 	ProgressTimer* hp = enemy->hp;
 	get_target(this, enemy_hero);
-	if (target != nullptr) {
-		string scheduleKey = "progress_update_hp" + std::to_string(reinterpret_cast<std::uintptr_t>(this));//change the key word
-		float hp_maxmax = hp_max;
-		// 生成随机数
-		srand((time(0)));
-		int random_number = rand() % 100;
-		float internal = (float)random_number / 1000 + as;
-		float damage = atn - target->def;
-		updateposition();
-		auto nowposition = hero_position;
-		auto toposition = target_position;
-		auto target_hero = target->mine;
-		auto my_hero = mine;
-		auto show_isdie = isdie;
-		the->schedule([=](float dt) {
-			if (myhp->getPercentage() != 0) {
-				//bullet
-				auto sprite = Sprite::create("bullet.png");
-				sprite->setPosition(nowposition);
-				sprite->setContentSize(Size(10, 10));
-				auto moveto = MoveTo::create(0.5f, target_hero->getPosition());
-				auto hide = Hide::create();
-				auto sequence = Sequence::create(moveto, hide, nullptr);
-				the->addChild(sprite);
-				sprite->runAction(sequence);
-			}
-			float MyHpPercentage = myhp->getPercentage();
-			float hp_nownow = hp->getPercentage() / 100 * hp_maxmax - damage;//damage;
-			if (hp_nownow < 0) {
-				hp_nownow = 0;
-				hp->setVisible(false);
-				the->unschedule(scheduleKey);//目标死了退出
-			}
-			// 更新HP进度条
-			if (MyHpPercentage != 0) {
-				float newHpPercentage = static_cast<float>(hp_nownow) / hp_maxmax * 100.0f;
-				hp->setPercentage(newHpPercentage);
-			}
-			else
-			{
-				show_isdie->setVisible(true);
-				the->unschedule(scheduleKey);//自己死了退出
-			}}, internal, scheduleKey);
-		skill_add(the, enemy_hero, hp);
-	}
+	hp->setType(ProgressTimer::Type::BAR);
+	hp->setScaleX(0.25); // 宽度缩小为原来的一半
+	hp->setScaleY(0.5); // 高度放大为原来的两倍
+	hp->setPercentage(100);
+	string scheduleKey = "progress_update_hp" + std::to_string(reinterpret_cast<std::uintptr_t>(this));//change the key word
+	float hp_maxmax = hp_max;
+	srand((time(0)));
+	// 生成随机数
+	int random_number = rand()%100;
+	float internal = (float)random_number / 1000 + as;;
+	float damage = atn - target->def;
+	updateposition();
+	auto nowposition = hero_position;
+	auto toposition = target_position;
+	auto target_hero = target->mine;
+	the->schedule([=](float dt) {
+		//bullet
+		hp->setMidpoint(Vec2(target_hero->getPosition().x, target_hero->getPosition().y - 30)); // 进度条起点位置
+		hp->setBarChangeRate(cocos2d::Vec2(1, 0)); // 进度条方向
+		hp->setPosition(target_hero->getPosition().x, target_hero->getPosition().y - 30); // 进度条位置
+		if (hp->getParent() == nullptr)
+			the->addChild(hp);
+		if (myhp->getPercentage() != 0) {
+			auto sprite = Sprite::create("bullet.png");
+			sprite->setPosition(nowposition);
+			sprite->setContentSize(Size(10, 10));
+			auto moveto = MoveTo::create(0.5f, target_hero->getPosition());
+			auto hide = Hide::create();
+			auto delay = DelayTime::create(0.5f);
+			auto sequence = Sequence::create(moveto, hide, nullptr);
+			the->addChild(sprite);
+			sprite->runAction(sequence);
+		}
+		float MyHpPercentage = myhp->getPercentage();
+		float hp_nownow = hp->getPercentage() / 100 * hp_maxmax - damage;//damage;
+		if (hp_nownow < 0) {
+			hp_nownow = 0;
+			hp->setVisible(false);
+			the->unschedule(scheduleKey);
+		}
+		// 更新HP进度条
+		if (MyHpPercentage != 0) {
+			float newHpPercentage = static_cast<float>(hp_nownow) / hp_maxmax * 100.0f;
+			hp->setPercentage(newHpPercentage);
+		}
+		}, internal, scheduleKey);
+	skill_add(the, enemy_hero, hp);
 }
 void DemonShooter::skill_add(HelloWorld* the, Player enemy_hero, ProgressTimer* hp) {
 	//创建进度条
 	updateposition();
-	ProgressTimer* mp = this->mp;
+	ProgressTimer* mp = ProgressTimer::create(Sprite::create("mp_progress_bar.png"));
 	ProgressTimer* myhp = this->hp;
+	mp->setType(ProgressTimer::Type::BAR);
+	mp->setScaleX(0.25); // 宽度缩小为原来的一半
+	mp->setScaleY(0.5); // 高度放大为原来的两倍
+	mp->setMidpoint(Vec2(hero_position.x, hero_position.y - 20)); // 进度条起点位置
+	mp->setBarChangeRate(cocos2d::Vec2(1, 0)); // 进度条方向
+	mp->setPosition(hero_position.x, hero_position.y - 20); // 进度条位置
+	mp->setPercentage(mp_now * 100 / mp_max);
+	the->addChild(mp); // 将进度条添加到场景中
 	get_target(this, enemy_hero);
 	float mp_up = mp_increment;
 	Vec2 fromposition = hero_position;
@@ -495,18 +528,23 @@ void DemonShooter::skill_add(HelloWorld* the, Player enemy_hero, ProgressTimer* 
 		float MyHpPercentage = myhp->getPercentage();
 		if (mp->isVisible() == true) {
 			if (hp->getPercentage() == 0) {
-				the->unschedule(scheduleKey);
+				mp->setVisible(false);
+				auto sprite = Sprite::create("die.png");
+				sprite->setContentSize(Size(100, 50));
+				sprite->setPosition(target_hero->getPosition());
+				the->addChild(sprite);
 			}
 			if (newMpPercentage >= 100.0f) {
 				// MP达到100%，重置MP并减少HP
 				newMpPercentage = 0.0f;
+				// 减少HP的当前值的20%
 				if (hp->getPercentage() != 0 && MyHpPercentage != 0) {
 					skill(target, the, fromposition, target_hero->getPosition());
 				}
 				else
-					the->unschedule(scheduleKey);//自己死了或目标死了退出
+					mp->setVisible(false);
 				// 更新HP进度条
-				float newHpPercentage = hp->getPercentage() - 50;
+				float newHpPercentage = hp->getPercentage() - 20;
 				hp->setPercentage(newHpPercentage);
 			}
 		}
@@ -532,51 +570,53 @@ void DemonShooter::attack(Hero* enemy, HelloWorld* the, Player enemy_hero)
 	ProgressTimer* myhp = hp;
 	ProgressTimer* hp = enemy->hp;
 	get_target(this, enemy_hero);
-	if (target != nullptr) {
-		string scheduleKey = "progress_update_hp" + std::to_string(reinterpret_cast<std::uintptr_t>(this));//change the key word
-		float hp_maxmax = hp_max;
-		// 生成随机数
-		srand((time(0)));
-		int random_number = rand() % 100;
-		float internal = (float)random_number / 1000 + as;
-		float damage = atn - target->def;
-		updateposition();
-		auto nowposition = hero_position;
-		auto toposition = target_position;
-		auto target_hero = target->mine;
-		auto my_hero = mine;
-		auto show_isdie = isdie;
-		the->schedule([=](float dt) {
-			if (myhp->getPercentage() != 0) {
-				//bullet
-				auto sprite = Sprite::create("bullet.png");
-				sprite->setPosition(nowposition);
-				sprite->setContentSize(Size(10, 10));
-				auto moveto = MoveTo::create(0.5f, target_hero->getPosition());
-				auto hide = Hide::create();
-				auto sequence = Sequence::create(moveto, hide, nullptr);
-				the->addChild(sprite);
-				sprite->runAction(sequence);
-			}
-			float MyHpPercentage = myhp->getPercentage();
-			float hp_nownow = hp->getPercentage() / 100 * hp_maxmax - damage;//damage;
-			if (hp_nownow < 0) {
-				hp_nownow = 0;
-				hp->setVisible(false);
-				the->unschedule(scheduleKey);//目标死了退出
-			}
-			// 更新HP进度条
-			if (MyHpPercentage != 0) {
-				float newHpPercentage = static_cast<float>(hp_nownow) / hp_maxmax * 100.0f;
-				hp->setPercentage(newHpPercentage);
-			}
-			else
-			{
-				show_isdie->setVisible(true);
-				the->unschedule(scheduleKey);//自己死了退出
-			}}, internal, scheduleKey);
-		skill_add(the, enemy_hero, hp);
-	}
+	hp->setType(ProgressTimer::Type::BAR);
+	hp->setScaleX(0.25); // 宽度缩小为原来的一半
+	hp->setScaleY(0.5); // 高度放大为原来的两倍
+	hp->setPercentage(100);
+	string scheduleKey = "progress_update_hp" + std::to_string(reinterpret_cast<std::uintptr_t>(this));//change the key word
+	float hp_maxmax = hp_max;
+	srand((time(0)));
+	// 生成随机数
+	int random_number = rand()%100;
+	float internal = (float)random_number / 1000 + as;
+	float damage = atn - target->def;
+	updateposition();
+	auto nowposition = hero_position;
+	auto toposition = target_position;
+	auto target_hero = target->mine;
+	the->schedule([=](float dt) {
+		//bullet
+		hp->setMidpoint(Vec2(target_hero->getPosition().x, target_hero->getPosition().y - 30)); // 进度条起点位置
+		hp->setBarChangeRate(cocos2d::Vec2(1, 0)); // 进度条方向
+		hp->setPosition(target_hero->getPosition().x, target_hero->getPosition().y - 30); // 进度条位置
+		if (hp->getParent() == nullptr)
+			the->addChild(hp);
+		if (myhp->getPercentage() != 0) {
+			auto sprite = Sprite::create("bullet.png");
+			sprite->setPosition(nowposition);
+			sprite->setContentSize(Size(10, 10));
+			auto moveto = MoveTo::create(0.5f, target_hero->getPosition());
+			auto hide = Hide::create();
+			auto delay = DelayTime::create(0.5f);
+			auto sequence = Sequence::create(moveto, hide, nullptr);
+			the->addChild(sprite);
+			sprite->runAction(sequence);
+		}
+		float MyHpPercentage = myhp->getPercentage();
+		float hp_nownow = hp->getPercentage() / 100 * hp_maxmax - damage;//damage;
+		if (hp_nownow < 0) {
+			hp_nownow = 0;
+			hp->setVisible(false);
+			the->unschedule(scheduleKey);
+		}
+		// 更新HP进度条
+		if (MyHpPercentage != 0) {
+			float newHpPercentage = static_cast<float>(hp_nownow) / hp_maxmax * 100.0f;
+			hp->setPercentage(newHpPercentage);
+		}
+		}, internal, scheduleKey);
+	skill_add(the, enemy_hero, hp);
 }
 void Hero::updateposition()
 {
