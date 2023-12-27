@@ -122,8 +122,8 @@ void SettingScene::exitTheScene() {
     Vec2 origin = Director::getInstance()->getVisibleOrigin();
 
     // 设置按钮位置为右下角
-    exitButton->setPosition(Vec2(origin.x + visibleSize.width - exitButton->getContentSize().width / 2 - 30,
-        origin.y + exitButton->getContentSize().height / 2 + 10));
+    exitButton->setPosition(Vec2(origin.x + visibleSize.width * 0.95 - exitButton->getContentSize().width / 2,
+        origin.y + exitButton->getContentSize().height / 2 + 15));
 
     // 创建菜单并添加按钮
     auto menu = Menu::create(exitButton, nullptr);
