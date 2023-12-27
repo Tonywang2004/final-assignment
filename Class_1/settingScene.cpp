@@ -113,10 +113,10 @@ void SettingScene::goToMainMenu() {
 void SettingScene::exitTheScene() {
     // 创建退出按钮
     auto exitButton = MenuItemImage::create(
-        "exit_button.jpg",  // 正常状态的图片
-        "exit_button_click.jpg", // 选中状态的图片
+        "return.png",  // 正常状态的图片
+        "return_h.png", // 选中状态的图片
         CC_CALLBACK_0(SettingScene::goToMainMenu, this));
-    exitButton->setScale(1.5f);
+    exitButton->setScale(4.0f);
     // 获取视图的大小和原点
     auto visibleSize = Director::getInstance()->getVisibleSize();
     Vec2 origin = Director::getInstance()->getVisibleOrigin();
