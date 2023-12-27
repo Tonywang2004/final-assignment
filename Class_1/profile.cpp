@@ -35,10 +35,10 @@ bool Profile::init()
 
     // 创建退出按钮
     auto exitButton = MenuItemImage::create(
-        "exit_button.jpg",  // 正常状态的图片
-        "exit_button_click.jpg", // 选中状态的图片
+           "return.png",  // 正常状态的图片
+        "return_h.png", // 选中状态的图片
         CC_CALLBACK_0(Profile::goToMainMenu, this));
-    exitButton->setScale(1.2f);
+    exitButton->setScale(3.0f);
 
     // 设置按钮位置为右下角
     exitButton->setPosition(Vec2(origin.x + visibleSize.width - exitButton->getContentSize().width / 2 - 24,
