@@ -84,8 +84,9 @@ void StartScene::createMenuButtons()
         // 创建下一个场景
         auto settingScene = SettingScene::create();
     // 切换到下一个场景，使用淡出效果
-    Director::getInstance()->replaceScene(TransitionFade::create(1.0, settingScene, Color3B(255, 255, 240)));
-        });
+    //Director::getInstance()->replaceScene(TransitionFade::create(1.0, settingScene, Color3B(255, 255, 240)));
+     cocos2d::Director::getInstance()->pushScene(TransitionFade::create(1.0, settingScene, Color3B(255, 255, 240)));    
+		});
 
     createAndAddButton("profile.png", "profile_click.jpg", Vec2(origin.x + visibleSize.width * 0.93, origin.y + visibleSize.height * 0.882), 0.8, []() {
         // 处理profile按钮点击事件
