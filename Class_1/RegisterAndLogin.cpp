@@ -2,12 +2,10 @@
 #include "transitionScene.h"
 #include "ui/CocosGUI.h" //使用UI组件
 #include "audio/include/AudioEngine.h"//音频头文件
-#include <boost/asio.hpp>
 #include <iostream>
 #include <string>
 
 USING_NS_CC;
-using boost::asio::ip::tcp;
 using namespace cocos2d::ui;
 using namespace std;
 
