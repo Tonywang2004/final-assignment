@@ -102,10 +102,11 @@ void SettingScene::conductSetResolution(){
     exitTheScene();
 }
 
-//回到主界面函数
+//回到主界面函数（此处功能改为回到上一个界面函数，调用场景栈） 
 void SettingScene::goToMainMenu() {
     auto mainMenuScene = StartScene::create(); 
-    Director::getInstance()->replaceScene(TransitionFade::create(0.5, mainMenuScene));
+    //Director::getInstance()->replaceScene(TransitionFade::create(0.5, mainMenuScene));
+    Director::getInstance()->popScene();
 }
 
 //退出当前界面按钮函数
