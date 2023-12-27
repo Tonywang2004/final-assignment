@@ -53,13 +53,12 @@ public:
 
     //其他
     void SettingScene::otherSetScene();
-
+    // implement the "static create()" method manually
+    CREATE_FUNC(SettingScene);
 private:
     int backgroundMusicID; // 背景音乐的音频ID
     bool clickSoundEnabled;  // 用于跟踪点击音效的状态
 
-    // implement the "static create()" method manually
-    CREATE_FUNC(SettingScene);
 };
 
 #endif 
