@@ -21,12 +21,15 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE.
  ****************************************************************************/
-
+#pragma once
 #ifndef __HELLOWORLD_SCENE_H__
 #define __HELLOWORLD_SCENE_H__
 
 #include "cocos2d.h"
-
+#include"vector"
+#include"hero.h"
+#include<vector>
+using namespace cocos2d;
 class ApplyLittleHero : public cocos2d::Scene
 {
 public:
@@ -34,9 +37,13 @@ public:
 
     virtual bool init();
 
+    //创建倒计时
+    Label* timerLabel=nullptr;
+    float countdown;
+    float countdown_max = 30.0f;
     //加载玩家小小英雄，参数表示不同玩家
     //void preloadWalkingFrames(const int& numPlayer);
-
+    void update(float dt) override;
     // implement the "static create()" method manually
     CREATE_FUNC(ApplyLittleHero);
 };
