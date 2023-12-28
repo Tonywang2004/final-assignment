@@ -27,6 +27,9 @@ public:
     //创建按钮
     ui::Button* createButton(const string& normalImage, const string& selectedImage, const cocos2d::Vec2& position,
         const float& scale, const function<void(Ref*, ui::Widget::TouchEventType)>& callback);
+    // 重写 onEnter 和 onExit 
+    virtual void onEnter() override;
+    virtual void onExit() override;
     // implement the "static create()" method manually
     CREATE_FUNC(RegisterAndLogin);
 
