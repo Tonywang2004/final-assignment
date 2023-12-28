@@ -1,9 +1,12 @@
 #include "RegisterAndLogin.h"
 #include "transitionScene.h"
+#include "settingScene.h"
+#include "AudioControl.h"
 #include "ui/CocosGUI.h" //使用UI组件
 #include "audio/include/AudioEngine.h"//音频头文件
 #include <iostream>
 #include <string>
+
 
 USING_NS_CC;
 using namespace cocos2d::ui;
