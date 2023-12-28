@@ -161,8 +161,8 @@ void RegisterAndLogin::createLogin() {
     auto loginButton = createButton("button_qd_00.png", "button_qd_01.png",
         Vec2(rightSideX - 50, origin.y + visibleSize.height - 200), 2.5, [=](Ref* sender, ui::Widget::TouchEventType type) {
             if (type == ui::Widget::TouchEventType::ENDED) {
-                // 播放音效
-                int audioId = AudioEngine::play2d("click_sound.mp3", false, 1.0f);
+                // 播放点击音效
+                AudioControl::getInstance()->playClickSoundEffect();
                 string account = accountBox->getText();
                 string password = passwordBox->getText();
 
@@ -193,8 +193,8 @@ void RegisterAndLogin::createLogin() {
     auto exitButton = createButton("button_qx_00.png", "button_qx_01.png", Vec2(rightSideX + 30, origin.y + visibleSize.height - 200),
         2.5, [=](Ref* sender, ui::Widget::TouchEventType type) {
             if (type == ui::Widget::TouchEventType::ENDED) {
-                // 播放音效
-                int audioId = AudioEngine::play2d("click_sound.mp3", false, 1.0f);
+               // 播放点击音效
+                AudioControl::getInstance()->playClickSoundEffect();
                 // 清空账号和密码输入框
                 accountBox->setText("");
                 passwordBox->setText("");
@@ -206,8 +206,8 @@ void RegisterAndLogin::createLogin() {
     auto registerButton = createButton("rigister.jpg", "rigister.jpg", Vec2(rightSideX - 5, origin.y + visibleSize.height - 230),
         0.2, [=](Ref* sender, ui::Widget::TouchEventType type) {
             if (type == ui::Widget::TouchEventType::ENDED) {
-                // 播放音效
-                int audioId = AudioEngine::play2d("click_sound.mp3", false, 1.0f);
+               // 播放点击音效
+                AudioControl::getInstance()->playClickSoundEffect();
                 //进入注册函数
                 this->createRegistration();
             }
@@ -248,8 +248,8 @@ void RegisterAndLogin::createRegistration() {
     auto loginButton_1 = createButton("button_qd_00.png", "button_qd_01.png", Vec2(float(visibleSize.width / 2 - 45), visibleSize.height / 2 - 100)
         , 2.5, [=](Ref* sender, ui::Widget::TouchEventType type) {
             if (type == ui::Widget::TouchEventType::ENDED) {
-                // 播放音效
-                int audioId = AudioEngine::play2d("click_sound.mp3", false, 1.0f);
+                // 播放点击音效
+                AudioControl::getInstance()->playClickSoundEffect();
                 // 获取输入的用户名和密码
                 string username = accountInput->getText();
                 string password = passwordInput->getText();
@@ -270,8 +270,8 @@ void RegisterAndLogin::createRegistration() {
     auto exitButton_1 = createButton("button_qx_00.png", "button_qx_01.png", Vec2(float(visibleSize.width / 2 + 25), visibleSize.height / 2 - 100)
         , 2.5, [=](Ref* sender, ui::Widget::TouchEventType type) {
             if (type == ui::Widget::TouchEventType::ENDED) {
-                // 播放音效
-                int audioId = AudioEngine::play2d("click_sound.mp3", false, 1.0f);
+               // 播放点击音效
+                AudioControl::getInstance()->playClickSoundEffect();
                 //清除当前界面，返回登录界面
                 this->removeAllChildren();
                 this->init();
@@ -294,3 +294,18 @@ void RegisterAndLogin::menuPlayCut(Ref* pSender)
     // 切换到下一个场景
     Director::getInstance()->replaceScene(newScene);
 }
+
+//音效控制 
+void  RegisterAndLogin::onEnter() {
+    Scene::onEnter();
+    // 检查是否处于静音状态
+    if (!AudioControl::getInstance()->isMuted()) {
+        // 如果没有静音，重新开始播放背景音乐
+        AudioControl::getInstance()->playBackgroundMusic("BM.mp3", true);
+    }
+}
+
+void  RegisterAndLogin::onExit() {
+    Scene::onExit();
+}
+
