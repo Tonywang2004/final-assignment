@@ -270,7 +270,22 @@ void RegisterAndLogin::createRegistration() {
     auto exitButton_1 = createButton("button_qx_00.png", "button_qx_01.png", Vec2(float(visibleSize.width / 2 + 25), visibleSize.height / 2 - 100)
         , 2.5, [=](Ref* sender, ui::Widget::TouchEventType type) {
             if (type == ui::Widget::TouchEventType::ENDED) {
-               // 播放点击音效
+                // 播放点击音效
+                AudioControl::getInstance()->playClickSoundEffect();
+                //清除当前界面，返回登录界面
+                //this->removeAllChildren();
+                //this->init();
+                // 清空账号和密码输入框
+                accountInput->setText("");
+                passwordInput->setText("");
+            }
+        });
+
+    // 创建退出按钮
+    auto exitButton_2 = createButton("return.png", "return_h.png", Vec2(origin.x + visibleSize.width * 0.95, visibleSize.height / 2 - 100)
+        , 2.5, [=](Ref* sender, ui::Widget::TouchEventType type) {
+            if (type == ui::Widget::TouchEventType::ENDED) {
+                // 播放点击音效
                 AudioControl::getInstance()->playClickSoundEffect();
                 //清除当前界面，返回登录界面
                 this->removeAllChildren();
