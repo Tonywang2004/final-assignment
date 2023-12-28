@@ -111,8 +111,8 @@ bool RegisterAndLogin::init()
     auto setting = createButton("setting_icon.png", "setting_icon_click.png", Vec2(origin.x + visibleSize.width * 0.95, origin.y + visibleSize.height * 0.95),
         2.5, [=](Ref* sender, ui::Widget::TouchEventType type) {
             if (type == ui::Widget::TouchEventType::ENDED) {
-                // 播放音效
-                int audioId = AudioEngine::play2d("click_sound.mp3", false, 1.0f);
+                // 播放点击音效
+                AudioControl::getInstance()->playClickSoundEffect();
                 // 创建下一个场景
                 auto newScene = SettingScene::create();
                 // 切换到下一个场景
@@ -301,7 +301,7 @@ void  RegisterAndLogin::onEnter() {
     // 检查是否处于静音状态
     if (!AudioControl::getInstance()->isMuted()) {
         // 如果没有静音，重新开始播放背景音乐
-        AudioControl::getInstance()->playBackgroundMusic("BM.mp3", true);
+        AudioControl::getInstance()->playBackgroundMusic("27Y.mp3", true);
     }
 }
 
