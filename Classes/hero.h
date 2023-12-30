@@ -13,6 +13,7 @@ class Hero :public cocos2d::Node{
 	friend class Player;
 	friend class Weapon;
 	friend class ImageSwitcher;
+	friend class ApplyLittleHero;
 protected:
 public:
 	float atn;//物理攻击力
@@ -31,27 +32,23 @@ public:
 	bool is_on_board=1;//是否上场	
 	double target_distance;
 	bool islive=1;
-	Hero* target=nullptr;//目标
 	Sprite* mine = nullptr;//自己
 	Vec2 hero_position;
 	int kind[4] = {0};
 	int level = 1;
 	Weapon* wea=nullptr;
-	Vec2 target_position;
 	void updateposition();
-	void get_target(Hero* hero, Player enemy);
 	ProgressTimer* hp = ProgressTimer::create(Sprite::create("hp_progress_bar.png"));
 	ProgressTimer* mp = ProgressTimer::create(Sprite::create("mp_progress_bar.png"));
-	Sprite* isdie= Sprite::create("die.png");
-	Sprite* getmine() 
+	Sprite* isdie;
+	Sprite* getmine() const
 	{ 
 		return mine;
 	}
-	Hero* gettarget(Player enemy) {
-		get_target(this, enemy);
-		return target;
+	Hero* gettarget(Player enemy) const {
+		return enemy.target;
 	}
-	Vec2 getposition() {
+	Vec2 getposition() const {
 		return mine->getPosition();
 	}
 	void setclick(int num)
@@ -63,7 +60,6 @@ public:
 		return click;
 	}
 	int click = 0;
-	void move_to_target(ApplyLittleHero*the,Hero* enemy);
 	int No;
 	ApplyLittleHero* the;
 	void enableMouseControl(bool enabled,ApplyLittleHero* the);
@@ -71,6 +67,7 @@ public:
 	bool listenerinit(); //鼠标点击监听器
 	Hero::Hero(int num,int lv, ApplyLittleHero* ApplyLittleHero){
 		level = lv;
+		isdie = Sprite::create("die.png");
 		switch (num)
 		{
 			case 1:
@@ -134,8 +131,9 @@ public:
 	void hpsetmax() {
 		hp->setPercentage(100);
 	}
+	void move_to_target(Player enemy_hero);
 	void attack(Hero* enemy, ApplyLittleHero* the, Player enemy_hero);
 	void skill_add(ApplyLittleHero* the, Player enemy_hero, ProgressTimer* hp);//根据时间增加蓝条
-	void skill(Hero* target, ApplyLittleHero* the, Vec2 fromposition, Vec2 toposition,ProgressTimer* myhp);//蓝条封顶放技能
+	void skill(Hero* target, ApplyLittleHero* the, Vec2 fromposition, Vec2 toposition,ProgressTimer* myhp) const;//蓝条封顶放技能
 };
 #endif
