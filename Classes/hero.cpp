@@ -66,7 +66,7 @@ void Hero::skill_add(ApplyLittleHero* the, Player enemy_hero, ProgressTimer* hp)
 void Hero::move_to_target(Player enemy_hero)
 {
 	auto moveto = MoveTo::create(0.5f, 0.8*enemy_hero.target->mine->getPosition()+0.2*this->getPosition());
-	mine->runAction(moveto);
+	this->mine->runAction(moveto);
 }
 void Hero::skill(Hero* target, ApplyLittleHero* the, Vec2 fromposition, Vec2 toposition,ProgressTimer* myhp) const {
 	if (No >= 4) {
@@ -192,50 +192,12 @@ void Hero::updateposition()
 {
 	hero_position = mine->getPosition();
 }
-//监听单击或双击，双击移动到固定位置（要修改），单击移动位置
-bool Hero::listenerinit() {
-	// 创建鼠标事件监听器
-	_Listener = EventListenerMouse::create();
-	auto mouseListener = _Listener;
-	// 初始化点击计数器和时间戳
-	int clickCount = 0;
-	float lastClickTime = 0;
-	bool isSpriteClicked = false;
-	const float doubleClickThreshold = 0.25f; // 双击阈值，单位秒
-	Sprite* mySprite = mine;
-	int isonboard=this->is_on_board;
-	// 鼠标按下事件
-	mouseListener->onMouseDown = [this,&isonboard, mySprite, &isSpriteClicked, &lastClickTime, doubleClickThreshold](Event* event) {
-		EventMouse* e = dynamic_cast<cocos2d::EventMouse*>(event);
-		Vec2 location = e->getLocationInView();
-		location = cocos2d::Director::getInstance()->convertToGL(location);
-		//y轴坐标反了，手动修改
-		auto refreshSize = cocos2d::Director::getInstance()->getWinSize();
-		location.y = refreshSize.height - location.y;
-		//mySprite->setPosition(location);
-		float currentTime = Director::getInstance()->getRunningScene()->getScheduler()->getTimeScale();
-		if (e->getMouseButton() == EventMouse::MouseButton::BUTTON_LEFT) {
-			if (mySprite->getBoundingBox().containsPoint(location)) {
-					isSpriteClicked = true;
-			}
-			else if (isSpriteClicked) {
-				// 如果精灵被单击且点击了其他位置，则移动精灵
-				auto moveto = MoveTo::create(0.5f, location);
-				mySprite->runAction(moveto);
-				//mySprite->setPosition(location);
-				isSpriteClicked = false;
-			}
-		}
-		};
-	return true;
-}
 
-
-//enable：是否将监听器添加到事件分发器
-void Hero::enableMouseControl(bool enabled,ApplyLittleHero* the) {
+void Hero::enableMouseControl(bool enabled, Hero* my, ApplyLittleHero* the)
+{
 	if (enabled) {
 		if (!_Listener)
-			listenerinit();
+			listenerinit(my);
 		// 将监听器添加到事件分发器
 		_eventDispatcher->addEventListenerWithSceneGraphPriority(_Listener, the);
 	}
@@ -246,3 +208,44 @@ void Hero::enableMouseControl(bool enabled,ApplyLittleHero* the) {
 		}
 	}
 }
+//监听单击或双击，双击移动到固定位置（要修改），单击移动位置
+bool Hero::listenerinit(Hero * my) {
+	// 创建鼠标事件监听器
+	_Listener = EventListenerMouse::create();
+	auto mouseListener = _Listener;
+	// 初始化点击计数器和时间戳
+	int clickCount = 0;
+	float lastClickTime = 0;
+	bool isSpriteClicked = false;
+	const float doubleClickThreshold = 0.25f; // 双击阈值，单位秒
+	Sprite* mySprite = this->mine;
+	int clicking = 0;
+	int isonboard=this->is_on_board;
+	// 鼠标按下事件
+	mouseListener->onMouseDown = [this,&my,&isonboard,&clicking, mySprite, &lastClickTime, doubleClickThreshold](Event* event) {
+		EventMouse* e = dynamic_cast<cocos2d::EventMouse*>(event);
+		Vec2 location = e->getLocationInView();
+		location = cocos2d::Director::getInstance()->convertToGL(location);
+		//y轴坐标反了，手动修改
+		Size refreshSize = cocos2d::Director::getInstance()->getWinSize();
+		location.y = refreshSize.height - location.y;
+
+		float currentTime = Director::getInstance()->getRunningScene()->getScheduler()->getTimeScale();
+		if (e->getMouseButton() == EventMouse::MouseButton::BUTTON_LEFT) {
+			Rect spritelocation = mySprite->getBoundingBox();
+			if (spritelocation.containsPoint(location)) {
+					clicking = 1;
+			}
+			else if (clicking==1) {
+				// 如果精灵被单击且点击了其他位置，则移动精灵
+				auto moveto = MoveTo::create(0.5f, location);
+				mySprite->runAction(moveto);
+
+				clicking = 0;
+			}
+		}
+		};
+	return true;
+}
+
+
