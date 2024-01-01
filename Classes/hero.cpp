@@ -11,64 +11,68 @@ void Hero::skill_add(ApplyLittleHero* the, Player enemy_hero, ProgressTimer* hp)
 	updateposition();
 	ProgressTimer* mp = this->mp;
 	ProgressTimer* myhp = this->hp;
-	float mp_up = mp_increment;
-	Vec2 fromposition = hero_position;
-	auto target_hero = enemy_hero.target->mine;
+	get_target(this, enemy_hero);
 	if (No >= 4) {
-		
-		float newMpPercentage = mp->getPercentage() + mp_up;
-		float MyHpPercentage = myhp->getPercentage();
-		if (mp->isVisible() == true) {
-			if (hp->getPercentage() == 0) {
-				mp->setVisible(false);
-			}
-			if (newMpPercentage >= 100.0f) {
-				// MP达到100%，重置MP并减少HP
-				newMpPercentage = 0.0f;
-				// 减少HP的当前值的20%
-				if (hp->getPercentage() != 0 && MyHpPercentage != 0) {
-					//执行射手技能
-					skill(enemy_hero.target, the, fromposition, target_hero->getPosition(), myhp);
-				}
-				else
+		float mp_up = mp_increment;
+		Vec2 fromposition = hero_position;
+		auto target_hero = target->mine;
+		string scheduleKey = "progress_update_" + std::to_string(reinterpret_cast<std::uintptr_t>(this));//change the key word
+		the->schedule([=](float dt) {
+			float newMpPercentage = mp->getPercentage() + mp_up;
+			float MyHpPercentage = myhp->getPercentage();
+			if (mp->isVisible() == true) {
+				if (hp->getPercentage() == 0) {
 					mp->setVisible(false);
-				// 更新HP进度条
-				float newHpPercentage = hp->getPercentage() - No * 5;
-				hp->setPercentage(newHpPercentage);
+				}
+				if (newMpPercentage >= 100.0f) {
+					// MP达到100%，重置MP并减少HP
+					newMpPercentage = 0.0f;
+					// 减少HP的当前值的20%
+					if (hp->getPercentage() != 0 && MyHpPercentage != 0) {
+						skill(target, the, fromposition, target_hero->getPosition(),myhp);
+					}
+					else
+						mp->setVisible(false);
+					// 更新HP进度条
+					float newHpPercentage = hp->getPercentage() - No * 5;
+					hp->setPercentage(newHpPercentage);
+				}
 			}
-		}
-		mp->setPercentage(newMpPercentage);
+			mp->setPercentage(newMpPercentage);
+			}, 0.5f, scheduleKey);
 	}
 	else
 	{
-		float newMpPercentage = mp->getPercentage() + mp_up;
-		float MyHpPercentage = myhp->getPercentage();
-		if (mp->isVisible() == true) {
-			if (hp->getPercentage() == 0) {
-				mp->setVisible(false);
-			}
-			if (newMpPercentage >= 100.0f) {
-				// MP达到100%，重置MP并减少HP
-				newMpPercentage = 0.0f;
-				// 减少HP的当前值的20%
-				if (hp->getPercentage() != 0 && MyHpPercentage != 0) {
-					//执行战士技能
-					skill(enemy_hero.target, the, fromposition, target_hero->getPosition(), myhp);
-
-				}
-				else
+		float mp_up = mp_increment;
+		Vec2 fromposition = hero_position;
+		auto target_hero = target->mine;
+		string scheduleKey = "progress_update_" + std::to_string(reinterpret_cast<std::uintptr_t>(this));//change the key word
+		the->schedule([=](float dt) {
+			float newMpPercentage = mp->getPercentage() + mp_up;
+			float MyHpPercentage = myhp->getPercentage();
+			if (mp->isVisible() == true) {
+				if (hp->getPercentage() == 0) {
 					mp->setVisible(false);
+				}
+				if (newMpPercentage >= 100.0f) {
+					// MP达到100%，重置MP并减少HP
+					newMpPercentage = 0.0f;
+					// 减少HP的当前值的20%
+					if (hp->getPercentage() != 0 && MyHpPercentage != 0) {
+						skill(target, the, fromposition, target_hero->getPosition(),myhp);
+					}
+					else
+						the->unschedule(scheduleKey);//自己死了或目标死了退出
+					// 更新HP进度条
+					float newHpPercentage = hp->getPercentage() - 10;
+					hp->setPercentage(newHpPercentage);
+				}
 			}
-		}
-		mp->setPercentage(newMpPercentage);
+			mp->setPercentage(newMpPercentage);
+			}, 0.5f, scheduleKey);
 	}
 }
-void Hero::move_to_target(Player enemy_hero)
-{
-	auto moveto = MoveTo::create(0.5f, 0.8*enemy_hero.target->mine->getPosition()+0.2*this->getPosition());
-	this->mine->runAction(moveto);
-}
-void Hero::skill(Hero* target, ApplyLittleHero* the, Vec2 fromposition, Vec2 toposition,ProgressTimer* myhp) const {
+void Hero::skill(Hero* target, ApplyLittleHero* the, Vec2 fromposition, Vec2 toposition,ProgressTimer* myhp) {
 	if (No >= 4) {
 		auto sprite = Sprite::create("bigbullet.png");//建立一个强化攻击的精灵图像
 		if (sprite != nullptr) {
@@ -92,28 +96,34 @@ void Hero::skill(Hero* target, ApplyLittleHero* the, Vec2 fromposition, Vec2 top
 void Hero::attack(Hero* enemy, ApplyLittleHero* the, Player enemy_hero)
 {
 	//以敌方为中心展开
+	//ImageSwitcher imageswitch("DemonSoldier.png", "player.png", this);
 	ProgressTimer* myhp = hp;
 	ProgressTimer* hp = enemy->hp;
+	get_target(this, enemy_hero);
+	string scheduleKey = "progress_update_hp" + std::to_string(reinterpret_cast<std::uintptr_t>(this));//change the key word
 	float hp_maxmax = hp_max;
 	srand((time(0)));
 	// 生成随机数
 	int random_number = rand() % 100;
 	float internal = (float)random_number / 1000 + as;
-	float damage = atn - enemy_hero.target->def;
+	float damage = atn - target->def;
 	updateposition();
 	auto nowposition = hero_position;
-	Vec2 toposition = enemy_hero.target->mine->getPosition();
-	auto target_hero = enemy_hero.target->mine;
-	auto mine_hero=mine;
-	int ch_rate = ch;
-	int ch_ms = ch_ma;
-	if (No >= 3) {
+	auto toposition = target_position;
+	auto target_hero = target->mine;
+	if (No <= 3) {
+		the->schedule([=](float dt) {
+			//bullet
+			hp->setMidpoint(Vec2(target_hero->getPosition().x, target_hero->getPosition().y - 30)); // 进度条起点位置
+			hp->setBarChangeRate(cocos2d::Vec2(1, 0)); // 进度条方向
+			hp->setPosition(target_hero->getPosition().x, target_hero->getPosition().y - 30); // 进度条位置
+			if (hp->getParent() == nullptr)
+				the->addChild(hp);
 			if (myhp->getPercentage() != 0) {
-				//子弹执行运动
 				auto sprite = Sprite::create("bullet.png");
 				sprite->setPosition(nowposition);
 				sprite->setContentSize(Size(10, 10));
-				auto moveto = MoveTo::create(0.5f, mine->getPosition() + target_hero->getPosition());
+				auto moveto = MoveTo::create(0.5f, target_hero->getPosition());
 				auto hide = Hide::create();
 				auto delay = DelayTime::create(0.5f);
 				auto sequence = Sequence::create(moveto, hide, nullptr);
@@ -121,70 +131,63 @@ void Hero::attack(Hero* enemy, ApplyLittleHero* the, Player enemy_hero)
 				sprite->runAction(sequence);
 			}
 			float MyHpPercentage = myhp->getPercentage();
-			srand((time(0)));
-			// 生成随机数
-			int isch = rand() % 10;
-			int extra = 0;
-			//是否暴击
-			if (isch < ch_rate * 10)
-				extra+=damage*ch_ms;
-			float hp_nownow = hp->getPercentage() / 100 * hp_maxmax - damage - extra;//damage;
+			float hp_nownow = hp->getPercentage() / 100 * hp_maxmax - damage;//damage;
 			if (hp_nownow < 0) {
 				hp_nownow = 0;
 				hp->setVisible(false);
+				the->unschedule(scheduleKey);
 			}
 			// 更新HP进度条
 			if (MyHpPercentage != 0) {
 				float newHpPercentage = static_cast<float>(hp_nownow) / hp_maxmax * 100.0f;
 				hp->setPercentage(newHpPercentage);
 			}
+			}, internal, scheduleKey);
 		skill_add(the, enemy_hero, hp);
 	}
 	else
 	{
-		//移动到目标位置
-		move_to_target(enemy_hero);
+		get_target(this, enemy_hero);
+		move_to_target(the, target);
 		updateposition();
+		auto moveAction = MoveTo::create(0.5f, target_position);
 		string scheduleKey1 = "progress_update_hp" + std::to_string(reinterpret_cast<std::uintptr_t>(this));//change the key word
 		float hp_maxmax = hp_max;
 		srand((time(0)));
 		// 生成随机数
 		int random_number = rand() % 100;
 		float internal = (float)random_number / 1000 + as;
-		float damage = atn - enemy_hero.target->def;
+		float damage = atn - target->def;
 		float moveDuration = 1.0f; // 移动持续时间，根据需要调整
 		updateposition();
 		auto nowposition = hero_position;
-		auto target_hero = enemy_hero.target->mine;
+		auto target_hero = target->mine;
 		auto my_hero = mine;
 		int nums = 0;
-		ProgressTimer* hp = enemy_hero.target->hp;
+		ProgressTimer* hp = target->hp;
 		Sprite* show_isdie = isdie;
-		float MyHpPercentage = myhp->getPercentage();
-		srand((time(0)));
-		// 生成随机数
-		int isch = rand() % 10;
-		int extra = 0;
-		//是否产生暴击
-		if (isch < ch_rate * 10)
-			extra += damage * ch_ms;
-		float hp_nownow = hp->getPercentage() / 100 * hp_maxmax - damage - extra;//damage;
-		auto rotateRight = RotateBy::create(0.5f, 30.0f); // 0.5秒内旋转30度
-		auto rotateBack = RotateBy::create(0.5f, -30.0f); // 再次旋转-30度以返回原位
-		auto sequence = Sequence::create(rotateRight, rotateBack, nullptr);
-		my_hero->runAction(sequence);
-		if (hp_nownow < 0) {
-			hp_nownow = 0;
-			hp->setVisible(false);
-		}
-		// 更新HP进度条
-		if (MyHpPercentage != 0) {
-			float newHpPercentage = static_cast<float>(hp_nownow) / hp_maxmax * 100.0f;
-			hp->setPercentage(newHpPercentage);
-		}
-		else {
-			show_isdie->setVisible(true);
-		}
+		the->schedule([=](float dt) {
+			float MyHpPercentage = myhp->getPercentage();
+			float hp_nownow = hp->getPercentage() / 100 * hp_maxmax - damage;//damage;
+			auto rotateRight = RotateBy::create(0.5f, 30.0f); // 0.5秒内旋转30度
+			auto rotateBack = RotateBy::create(0.5f, -30.0f); // 再次旋转-30度以返回原位
+			auto sequence = Sequence::create(rotateRight, rotateBack, nullptr);
+			my_hero->runAction(sequence);
+			if (hp_nownow < 0) {
+				hp_nownow = 0;
+				hp->setVisible(false);
+				the->unschedule(scheduleKey1);//目标死了退出
+			}
+			// 更新HP进度条
+			if (MyHpPercentage != 0) {
+				float newHpPercentage = static_cast<float>(hp_nownow) / hp_maxmax * 100.0f;
+				hp->setPercentage(newHpPercentage);
+			}
+			else {
+				show_isdie->setVisible(true);
+				the->unschedule(scheduleKey1);//自己死了退出循环
+			}
+			}, internal, scheduleKey1);
 		skill_add(the, enemy_hero, hp);
 	}
 }
@@ -192,60 +195,76 @@ void Hero::updateposition()
 {
 	hero_position = mine->getPosition();
 }
-
-void Hero::enableMouseControl(bool enabled, Hero* my, ApplyLittleHero* the)
+void Hero::move_to_target(ApplyLittleHero* the,Hero* enemy)
 {
-	if (enabled) {
-		if (!_Listener)
-			listenerinit(my);
-		// 将监听器添加到事件分发器
-		_eventDispatcher->addEventListenerWithSceneGraphPriority(_Listener, the);
-	}
-	else {
-		if (_Listener) {
-			// 移除监听器
-			_eventDispatcher->removeEventListener(_Listener);
-		}
-	}
+	auto moveto = MoveTo::create(1.0f, Vec2(target_position.x-10,target_position.y-10));
+	mine->runAction(moveto);
+	if(mine->getBoundingBox().intersectsRect(enemy->mine->getBoundingBox()))
+		mine->stopAllActions();
 }
-//监听单击或双击，双击移动到固定位置（要修改），单击移动位置
-bool Hero::listenerinit(Hero * my) {
-	// 创建鼠标事件监听器
-	_Listener = EventListenerMouse::create();
-	auto mouseListener = _Listener;
-	// 初始化点击计数器和时间戳
-	int clickCount = 0;
-	float lastClickTime = 0;
-	bool isSpriteClicked = false;
-	const float doubleClickThreshold = 0.25f; // 双击阈值，单位秒
-	Sprite* mySprite = this->mine;
-	int clicking = 0;
-	int isonboard=this->is_on_board;
-	// 鼠标按下事件
-	mouseListener->onMouseDown = [this,&my,&isonboard,&clicking, mySprite, &lastClickTime, doubleClickThreshold](Event* event) {
-		EventMouse* e = dynamic_cast<cocos2d::EventMouse*>(event);
-		Vec2 location = e->getLocationInView();
-		location = cocos2d::Director::getInstance()->convertToGL(location);
-		//y轴坐标反了，手动修改
-		Size refreshSize = cocos2d::Director::getInstance()->getWinSize();
-		location.y = refreshSize.height - location.y;
-
-		float currentTime = Director::getInstance()->getRunningScene()->getScheduler()->getTimeScale();
-		if (e->getMouseButton() == EventMouse::MouseButton::BUTTON_LEFT) {
-			Rect spritelocation = mySprite->getBoundingBox();
-			if (spritelocation.containsPoint(location)) {
-					clicking = 1;
-			}
-			else if (clicking==1) {
-				// 如果精灵被单击且点击了其他位置，则移动精灵
-				auto moveto = MoveTo::create(0.5f, location);
-				mySprite->runAction(moveto);
-
-				clicking = 0;
+void Hero::get_target(Hero* hero, Player enemy)
+{
+	double minDistance = 99999999;
+	int index = -1;
+	//获取距离最近的英雄
+	if (enemy.hero_on_board.size() != 0) {
+		for (int i = 0; i < enemy.hero_on_board.size(); i++)
+		{
+			if (enemy.hero_on_board[i]->islive != 0) {
+				double delta_position_square = (enemy.hero_on_board[i]->mine->getPosition().x - hero->mine->getPosition().x) * (enemy.hero_on_board[i]->mine->getPosition().x - hero->mine->getPosition().x) + (enemy.hero_on_board[i]->mine->getPosition().y - hero->mine->getPosition().y) * (enemy.hero_on_board[i]->mine->getPosition().y - hero->mine->getPosition().y);
+				if (minDistance > delta_position_square) {
+					minDistance = delta_position_square;
+					index = i;
+				}
 			}
 		}
-		};
+		//目标变化
+		if (index != -1) {
+			target = enemy.hero_on_board[index];
+			target_position = target->mine->getPosition();
+			target_distance = sqrt(minDistance);
+		}
+		else
+			target = nullptr;
+	}
+	else
+		target = nullptr;
+}
+bool Hero::isTouch(Touch* touch, Event* event) {
+	static float lastTouchTime = 0;
+	float currentTime = Director::getInstance()->getTotalFrames();
+	Vec2 location = touch->getLocation();
+
+	if (mine->getBoundingBox().containsPoint(location)) {
+		if (currentTime - lastTouchTime < 15) { // 检查双击，这里假设每帧间隔1/60秒
+			// 双击了mine精灵
+			if (this->is_onboard == 1) {
+				int index=0;
+				for (int i = 1; i <= MAX_STORAGE_NUM; i++)
+					if ( seat[i] != 1 ) {
+						index = i;
+						break;
+					}
+				mine->setPosition(storage_position[index]);//双击后在场直接跳到0，0
+				this->is_onboard = 0;
+			}
+			else {
+				mine->setPosition(200,200);//双击后不在场跳到200，200
+				this->is_onboard = 1;
+			}
+			clink = 0;
+		}
+		else {
+			// 单击
+			clink = !clink;
+		}
+		lastTouchTime = currentTime;
+	}
+	else if (clink) {
+		// 如果已经点击了mine，再次点击其他位置
+		mine->setPosition(location);
+		clink = 0;
+	}
+
 	return true;
 }
-
-

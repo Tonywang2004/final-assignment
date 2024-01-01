@@ -3,51 +3,44 @@
 
 #pragma once
 #include "cocos2d.h"
-#include "Hero.h"
-#include "Player.h"
-#include "Const.h"
+#include "hero.h"
+#include "player.h"
+#include "const.h"
 USING_NS_CC;
-using namespace std;
-
-class Weapon :public Sprite {
+//装备合成路线
+class Weapon {
 	friend class Player;
+	friend class Role;
 	friend class Hero;
 private:
-	Sprite* weapon;
-	string image;
-	int atn = 0;//攻击力
-	int def = 0;//防御力
+	int ad = 0;//attack damage攻击力
+	int ap = 0;//ability power法强
+	int def = 0;//物理防御力
+	int mr = 0;//magic resistance 魔抗
 	int hp_max = 0;//最大生命值
+	int mp_per_second = 0;//每秒获得的蓝量
 	float as = 0;//attack speed 攻速
-	float ch = 0;//critical hit rate暴击率
-	bool click = false;//标志装备是否被鼠标选中
-	int No;//标志
+	float ch_rate = 0;//critical hit rate暴击率
+	float ch_ma = 0;//critical hit magnification 暴击伤害倍率
+	int No;
+	std::map<std::pair<int, int>, int> combination = {
+	{{WAND,SWORD},TECHGUN},{{WAND,ARMOR},HOURGLASS},{{WAND,SPATULA},EXTRAMAGICIAN},{{SWORD,ARMOR},MALMORTIUS},{{SWORD,SPATULA},EXTRASHOOTER},
+	{{ARMOR,SPATULA},EXTRASOLDIER},{{WAND,WAND},DEATHCAP},{{SWORD,SWORD},INFINITYEDGE},{{ARMOR,ARMOR},MERCURYCLOAK},{{SPATULA,SPATULA},NATUREFORCE}
+	};
 public:
-	Weapon(int index) {
-		weapon = Weapon::create(image);
-		No = index;
-		atn = weapon_atn[No];
-		def = weapon_def[No];
-		as = weapon_as[No];
-		hp_max = 0;
-		ch = 0;
-		if (No == HURRICANE)
-			ch = 0.2, as += 0.1, atn += 10;
-		if (No == THORNMAIL)
-			hp_max = 200, def += 15;
-		if (No == SHIELDBOW)
-			hp_max = 100, atn += 10, def += 5;
+	Weapon(int number) {
+		//weapon = Weapon::create(image[number]);
+		//ad = AD[number];
+		//ap = AP[number];
+		//def = DEF[number];
+		//mr = MR[number];
+		//hp_max = HP_MAX[number];
+		//mp_per_second = MP_PER_SECOND[number];
+		//as = AS[number];
+		//ch_rate = CH_RATE[number];
+		//ch_ma = CH_MA[number];
 	}
-	bool operator<(const Weapon& other) {
-		return No < other.No;
-	}bool operator>(const Weapon& other) {
-		return No > other.No;
-	}
-	bool operator==(const Weapon& other) {
-		return No == other.No;
-	}
-	Weapon& operator=(const Weapon& other) {
-		return Weapon(other.No);
-	}
+	Sprite* weapon;
+	Weapon* check_combination(Weapon* fir, Weapon* sec);
 };
 #endif
